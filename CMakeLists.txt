@@ -13,5 +13,7 @@ macro(vesta_use_lib LIBNAME)
 	set(LINK_LIBS ${LINK_LIBS} ${LIBNAME})
 endmacro(vesta_use_lib)
 
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}) 
 add_subdirectory(${SRC_ROOT})
+
 

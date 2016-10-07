@@ -49,17 +49,17 @@ void Vesta::newEditWindow()
 	Window->setWindowTitle("first window");
 	Window->show();
 
-	Window->setFont(22);
+	File->open();
 
 	//Window2->setWindowTitle("second window");
 	//Window2->show();
 	Pen pen = { { 50, 0, 0 },{ 0,0,0,1 } };
 
 
-	std::ifstream f("test.txt");
-	std::string line;
-	while (std::getline(f, line)) {
-		Window->addText(line.c_str(), pen);
-		pen.pos.x = 5;
-	}
+	//std::ifstream f("test.txt");
+	//std::string line;
+	//while (std::getline(f, line)) {
+	//	Window->addText(line.c_str(), pen);
+	//	pen.pos.x = 5;
+	//}
 }

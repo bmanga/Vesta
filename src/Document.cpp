@@ -2,102 +2,56 @@
 #include "Document.h"
 #include "EditActions.h"
 
-LineView::LineView(const char* Start, size_t Len, Line Line) 
-	: mStart(Start)
-	, mLength(Len)
-	, mLine(Line){
-}
 
-unsigned LineView::count(const char C, Character Off) const {
-	return std::count(mStart + Off.offset(), mStart + mLength, C);
-}
-
-DocPosition LineView::endOfLinePos() const
+Document::Document(fs::path File)
+	: mFilePath(File)
+	, mActiveLine(1)
 {
-	unsigned NumTabs = count('\t');
-	// FIXME : this needs to change as soon as we have a global settings 
-	// instance
-	VestaOptions Opts;
-
-	unsigned TabSize = Opts.textEditor().TabSize;
-
-	unsigned Col = (TabSize - 1) * NumTabs + mLength;
-
-	return DocPosition(
-		mLine, 
-		Column(Col, Column::OFFSET),
-		Character(mLength, Character::OFFSET));
-}
-
-void LineView::adjustPos(DocPosition& Pos) const
-{
-	if (Pos > endOfLinePos())
-		Pos = endOfLinePos();
-
-	// FIXME: this needs to access global options
-	VestaOptions Opts;
-	unsigned TabSize = Opts.textEditor().TabSize;
-	unsigned NumChars = Pos.column().value();
-
-	for (Character Char{1}; Char.offset() < Pos.column().offset(); ++Char)
-	{
-		if (isTab(Char))
-			NumChars -= TabSize - 1;
-	}
-
-	Pos.set(Character(NumChars, Character::VALUE));
-}
-
-Document::Document(fs::path File): mFilePath(File)
-{
-	open();
 }
 
 void Document::open()
 {
-	mNewlines.clear();
-	mNewlines.push_back(0);
+	mChunks.clear();
 
 	std::ifstream Doc(mFilePath);
 
-	std::string Line;
+	std::string LineBuf;
+
+	Line LineCnt{ 1 };
+
 	uint32_t NewLineOffset = 0;
 
-	while(std::getline(Doc, Line))
+	std::getline(Doc, LineBuf);
+	mChunks.emplace_back(LineView{ LineBuf, LineCnt++ });
+
+	while(std::getline(Doc, LineBuf))
 	{
-		mText += Line.append("\n");
-		NewLineOffset += Line.size();
-		mNewlines.push_back(NewLineOffset);
+		LineView LV{ LineBuf, LineCnt++ };
+
+		mChunks[0].append(LV);
 		
 	}
 }
 
+
 char Document::deleteChar(DocPosition Pos)
 {
-	unsigned Offset = mNewlines[Pos.line().offset()];
-	Offset += Pos.character().offset() - 1;
+	auto ChunkIt = containingTextChunk(Pos.line());
 
-	char Deleted = mText[Offset];
-	mText.erase(Offset, 1);
-
-
-	// Update Newline Indices
-	for (auto It = mNewlines.begin() + Pos.line().value();
-		It != mNewlines.end();
-		++It) {
-		--(*It);
-	}
-
-	if (Deleted == '\n') {
-		mNewlines.erase(mNewlines.begin() + Pos.line().offset());
-	}
-
-	return Deleted;
+	return ChunkIt->deleteChar(Pos);
 }
 
-const std::string& Document::text() const
+DocPosition Document::position(ScreenPosition SPos)
 {
-	return mText;
+	LineView LV = lineAt(SPos.line());
+
+	// We assume we are past the the end of the document. We return
+	// the last line 
+	if (!LV.isValid())
+	{
+		return mChunks.back().lastLine().endOfLine();
+	}
+	return LV.position(SPos);
 }
 
 bool Document::handleRequest(FinalizedRequest Request)
@@ -108,21 +62,21 @@ bool Document::handleRequest(FinalizedRequest Request)
 	return true;
 }
 
-void Document::insertChar(DocPosition Pos, char C)
+DocPosition Document::insertChar(DocPosition Pos, char C)
 {
-	unsigned Offset = mNewlines[Pos.line().offset()];
-	Offset += Pos.character().offset();
+	auto ChunkIt = containingTextChunk(Pos.line());
 
-	mText.insert(Offset, 1, C);
+	return ChunkIt->insertChar(Pos, C);
+}
 
-		// Update Newline Indices
-	for (auto It = mNewlines.begin() + Pos.line().value(); 
-		It != mNewlines.end(); 
-		++It)
+LineView Document::lineAt(Line Ln)
+{
+	auto ChunkIt = containingTextChunk(Ln);
+
+	if (ChunkIt == mChunks.end())
 	{
-		++(*It);
+		return LineView::Invalid();
 	}
 
-	if (C == '\n')
-		mNewlines.insert(mNewlines.begin() + Pos.line().value(), Offset + 1);
+	return ChunkIt->lineAt(Ln);
 }

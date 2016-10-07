@@ -6,6 +6,30 @@
 class Cursor;
 class Document;
 
+class NavigateAction
+{
+public:
+	enum Direction : uint8_t
+	{
+		Prev,
+		Next,
+		Up,
+		Down,
+		EndOfLine,
+		StartOfLine,
+		EndOfFile,
+		StartOfFile
+	};
+
+	NavigateAction(Direction Dir)
+		: mDirection(Dir) { }
+
+	bool execute(Cursor *C) const;
+
+private:
+	Direction mDirection;
+};
+
 class EditAction
 {
 public:
@@ -40,7 +64,7 @@ private:
 class DeleteAction : public EditAction
 {
 public:
-	DeleteAction(unsigned N);
+	DeleteAction(bool BackSpace);
 	~DeleteAction() override = default;
 	bool commit(Document*, Cursor*) override;
 	bool revert(Document*, Cursor*) override;
@@ -48,6 +72,7 @@ public:
 private:
 	std::string mContent;
 	DocPosition mPos;
+	bool mBackSpace;
 };
 
 

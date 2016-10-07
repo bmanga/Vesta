@@ -15,9 +15,8 @@ using namespace ftgl;
 class Cursor
 {
 public:
-	Cursor(Document *Document, VertexBuffer *TextBuffer, FontInfo Info) 
+	Cursor(Document *Document, FontInfo Info) 
 		: mDocument(Document)
-		, mTextBuffer(TextBuffer)
 		, mFontInfo(Info)
 		, mPos(1, 1, 1) {
 
@@ -30,8 +29,8 @@ public:
 		mFontInfo = Info;
 	}
 
-	void prev(unsigned N = 1);
-	void next(unsigned N = 1);
+	void prev(unsigned N = 1, bool AcrossLines = true);
+	void next(unsigned N = 1, bool AcrossLines = true);
 	void up(unsigned N = 1);
 	void down(unsigned N = 1);
 	void eol();
@@ -41,10 +40,12 @@ public:
 
 	void updateBuffer() const;
 
+	static void render();
+
 private:
 	Document *mDocument;
-	VertexBuffer *mTextBuffer;
 	FontInfo mFontInfo;
 	DocPosition mPos;
+	Column mIdealCol{1}; // Used to remember column while moving across lines
 };
 

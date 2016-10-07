@@ -228,7 +228,9 @@ size_t ftgl::Font::loadGlyphs(const char* codepoints)
 		return utf8_strlen(codepoints);
 
 	/* Load each glyph */
-	for (size_t i = 0; i < utf8_strlen(codepoints); i += utf8_surrogate_len(codepoints + i)) {
+	for (size_t i = 0, len = utf8_strlen(codepoints);
+		i < len; 
+		i += utf8_surrogate_len(codepoints + i)) {
 		uint32_t ucodepoint = utf8_to_utf32(codepoints + i);
 		/* Check if codepoint has been already loaded */
 		if (findGlyph(ucodepoint))

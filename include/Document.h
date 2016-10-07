@@ -1,42 +1,17 @@
 #pragma once
 
-#include <string>
-#include <cstdint>
+#include "TextChunk.h"
 #include <vector>
 #include <experimental/filesystem>
 #include "Request.h"
 #include "Types.h"
-#include "VestaOptions.h"
-#include <cassert>
+
 
 namespace fs = std::experimental::filesystem;
 
 
 
-class LineView
-{
-public:
 
-	LineView(const char* Start, size_t Len, Line Line);
-
-	unsigned count(const char C, Character Off = Character(1)) const;
-
-	bool isTab(Character Char) const
-	{
-		return mStart[Char.offset()] == '\t';
-	}
-
-	//size_t countIfNot(const char C, Offset Off = 0) const;
-
-	DocPosition endOfLinePos() const;
-	void adjustPos(DocPosition& Pos) const;
-
-
-private:
-	const char *mStart;
-	size_t      mLength;
-	Line        mLine;
-};
 
 class Document
 {
@@ -44,20 +19,13 @@ class Document
 public:
 	Document(fs::path File);
 
-	Document() = default;
+	Document() : mActiveLine(1) {};
 
 	bool handleRequest(FinalizedRequest Request);
 
-	void insertChar(DocPosition Pos, char C);
+	DocPosition insertChar(DocPosition Pos, char C);
 
-	LineView lineAt(DocPosition Pos)
-	{
-		assert(Pos.line().value() < mNewlines.size());
-		const char *pText = &mText[0];
-		size_t OffStart = mNewlines[Pos.line().offset()];
-		size_t OffEnd = mNewlines[Pos.line().offset() + 1];
-		return{ pText + OffStart, OffEnd - OffStart - 1, Pos.line() };
-	}
+	LineView lineAt(Line Ln);
 
 	void open();
 	//void close();
@@ -65,8 +33,34 @@ public:
 
 	char deleteChar(DocPosition Pos);
 
-	const std::string& text() const;
+	void render()
+	{
+		for (auto &&Chunk : mChunks)
+		{
+			Chunk.render();
+		}
+	}
+
+	DocPosition position(ScreenPosition SPos);
+
+	LineView lastLine() const
+	{
+		return mChunks.back().lastLine();
+	}
 private:
+	auto containingTextChunk(Line Ln)
+	{
+		auto It = std::find_if(mChunks.begin(), mChunks.end(), 
+			[Ln](const TextChunk &TC)
+		{
+			return TC.contains(Ln);
+		});
+
+		// This should never fail
+		//assert(It != mChunks.end());
+
+		return It;
+	}
 	enum class NewlineType: unsigned char
 	{
 		LF,  // \n -> Unix
@@ -75,6 +69,7 @@ private:
 	};
 	NewlineType mNewlineType;
 	fs::path mFilePath;
-	std::vector<uint32_t> mNewlines;
-	std::string mText;
+	std::vector<TextChunk> mChunks;
+	std::string mActiveTextBuffer;
+	Line mActiveLine;
 };
