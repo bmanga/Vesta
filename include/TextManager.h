@@ -19,6 +19,13 @@ class Font;
 }
 
 
+struct Vertex
+{
+	float x, y, z;    // position
+	float s, t;       // texture
+	float r, g, b, a; // color
+};
+
 
 template <class T>
 class TSingleton
@@ -47,10 +54,7 @@ public:
 
 	Font *getFont(float Pt);
 
-	Font *getFont(FontInfo Font)
-	{
-		return getFont(Font.Pt);
-	}
+
 
 	Font *getFont() {
 		return getFont(FontPt);
@@ -58,13 +62,13 @@ public:
 
 	void renderText(VertexBuffer* Buffer) const;
 
-	FontInfo getFontInfo() const { return mFontInfo; }
+
 private:
 	TextManager();
 
 private:
 	unsigned Shader;
-	FontInfo mFontInfo{ "assets/fonts/Consolas.ttf", 14.0f, 0, 0 };
+
 
 	std::string FontName = "assets/fonts/Consolas.ttf";
 	float FontPt = 10.0f;
@@ -74,5 +78,5 @@ private:
 };
 
 
-void SetGlyphVertices(const Glyph *glyph, Pen pen, Vertex *Vertices);
-FontInfo GetFontInfo(Font* F);
+void SetGlyphVertices(const Glyph *glyph, Position pos, Color col, Vertex *Vertices);
+

@@ -20,10 +20,18 @@ bool NavigateAction::execute(Cursor* C) const
 	case Down:
 		C->down();
 		break;
+	case EndOfLine:
+		C->eol();
 	default:
 		;
 	}
 
+	return true;
+}
+
+bool DocumentAction::execute(Document* D) const
+{
+	D->save();
 	return true;
 }
 
@@ -35,9 +43,10 @@ TypeAction::TypeAction(std::string S)
 
 bool TypeAction::commit(Document *D, Cursor *C)
 {
-	DocPosition NewPos = D->insertChar(C->getPosition(), mContent[0]);
-
-	C->moveTo(NewPos);
+	for (size_t j = 0; j < mContent.size(); ++j) {
+		DocPosition NewPos = D->insertChar(C->getPosition(), mContent[j]);
+		C->moveTo(NewPos);
+	}
 
 	return true;
 }
@@ -83,4 +92,24 @@ bool DeleteAction::commit(Document *D, Cursor *C)
 bool DeleteAction::revert(Document*, Cursor*)
 {
 	return true;
+}
+
+void MultiEditAction::pushBack(std::unique_ptr<EditAction> Action) {
+	mActions.push_back(std::move(Action));
+}
+
+void MultiEditAction::pushFront(std::unique_ptr<EditAction> Action) {
+	mActions.insert(mActions.begin(), std::move(Action));
+}
+
+bool MultiEditAction::commit(Document *D, Cursor *C) {
+	for (auto &&Action : mActions) {
+		Action->commit(D, C);
+	}
+
+	return true;
+}
+
+bool MultiEditAction::revert(Document *, Cursor *) {
+	return false;
 }

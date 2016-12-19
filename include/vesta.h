@@ -15,7 +15,7 @@ public:
 	~Vesta();
 
 	void keyPressEvent(QKeyEvent *Evt) override;
-	void newEditWindow();
+	void newEditWindow(const char *Filename);
 private:
 	Ui::VestaClass ui;
 	ActionManager Actions;

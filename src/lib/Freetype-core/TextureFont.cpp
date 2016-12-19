@@ -441,7 +441,7 @@ size_t ftgl::Font::loadGlyphs(const char* codepoints)
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(library);
-	generateKerning();
+	//generateKerning();
 
 	return missed;
 }

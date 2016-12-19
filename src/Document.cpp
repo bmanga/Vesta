@@ -24,15 +24,46 @@ void Document::open()
 	std::getline(Doc, LineBuf);
 	mChunks.emplace_back(LineView{ LineBuf, LineCnt++ });
 
+	TextChunk *Active = &mChunks[0];
+	unsigned LineN = 0;
 	while(std::getline(Doc, LineBuf))
 	{
 		LineView LV{ LineBuf, LineCnt++ };
 
-		mChunks[0].append(LV);
+		if (++LineN == 100)
+		{
+			LineN = 0;
+			mChunks.emplace_back(LV);
+			Active = &mChunks.back();
+		}
+		else {
+			Active->append(LV);
+		}
 		
 	}
 }
 
+void Document::save()
+{
+	std::ofstream File(mFilePath);
+
+	for (auto& Chunk : mChunks)
+	{
+		File << Chunk;
+	}
+
+}
+
+//std::ostringstream FileData;
+//for (auto& Chunk : mChunks) {
+//	FileData << Chunk;
+//}
+//
+//std::string FileStr = FileData.str();
+//FileStr.pop_back();
+//
+//std::ofstream File(mFilePath);
+//File << FileStr;
 
 char Document::deleteChar(DocPosition Pos)
 {
@@ -69,7 +100,7 @@ DocPosition Document::insertChar(DocPosition Pos, char C)
 	return ChunkIt->insertChar(Pos, C);
 }
 
-LineView Document::lineAt(Line Ln)
+LineView Document::lineAt(Line Ln) const
 {
 	auto ChunkIt = containingTextChunk(Ln);
 

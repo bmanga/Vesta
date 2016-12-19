@@ -55,52 +55,66 @@ static void unrolled_vector_add(VShortIt Begin, VShortIt End, int16_t N) {
 }
 
 
+TextChunk::TextChunk(LineView First): mDocSpan(First.lineRange())
+                                      , mContentBuffer(First.str())
 
-static void AddLineToVertexBuffer(LineView Line, VertexBuffer &Buffer)
+                                      , mPendingBufUpdate(false)
 {
-	const VestaOptions &Opts = GetOptions();
+	mNewlines.push_back(0);
+	mNewlines.push_back(static_cast<uint16_t>(First.length()));
 
-	Pen Pos{ { 0, 0, 0 },{ 0,0,0,1 } };
-
-	//FIXME: hate the negative sign
-	Pos.pos.y -= Line.line().value() * Opts.font().Height;
-
-	Font *F = Opts.font().Font;
-
-	const char *Codepoints = Line.start();
-	size_t Len = Line.length();
-
-	for (size_t J = 0;
-		J < Len;
-		J += utf8_surrogate_len(Codepoints + J))
-	{
-		if (Codepoints[J] == '\t')
-		{
-			unsigned TabSize = Opts.textEditor().TabSize;
-			Pos.pos.x += Opts.font().Width * TabSize;
-			continue;
-		}
-		const Glyph *G = F->getGlyph(Codepoints + J);
-
-		if (!G)
-		{
-			continue;
-		}
-
-		Vertex Vertices[4];
-
-		SetGlyphVertices(G, Pos, Vertices);
-
-		constexpr static GLuint Indices[] = { 0, 1, 2, 0, 2, 3 };
-		Buffer.push_back((const char*)Vertices, 4, Indices, 6);
-		Pos.pos.x += Opts.font().Width;
-	}
 
 }
 
-void TextChunk::replace(LineView Line) {
-	mGlyphBufferDirty = true;
+void TextChunk::append(LineView Line)
+{
+	assert(mNewlines.size() < 255);
+	assert(Line.startOfLine() > mDocSpan.end()
+		&& "Line must come after what the current buffer spans over");
 
+	mContentBuffer.append(Line.start(), Line.length());
+	mNewlines.push_back(static_cast<uint16_t>
+		(mNewlines.back() + Line.length()));
+
+	mDocSpan.setEnd(Line.endOfLine());
+}
+
+bool TextChunk::contains(Line Ln) const
+{
+	return mDocSpan.contains(Ln);
+}
+
+std::ostream& operator<<(std::ostream& Out, const TextChunk& Chunk)
+{
+	for (LineView Line : Chunk)
+	{
+		Out.write(Line.start(), Line.length());
+		Out.put('\n');
+	}
+	return Out;
+}
+
+TextChunk::iterator TextChunk::begin() const
+{
+	return iterator(*this, mDocSpan.start().line());
+}
+
+TextChunk::iterator TextChunk::end() const
+{
+	return iterator(*this, ++(mDocSpan.end().line()));
+}
+
+size_t TextChunk::newlineVecOffset(Line Line) const
+{
+	assert(mDocSpan.contains(Line));
+
+	auto StartLn = mDocSpan.start().line().value();
+	auto LineLn = Line.value();
+
+	return LineLn - StartLn;
+}
+
+void TextChunk::replace(LineView Line) {
 	auto Idx = newlineVecOffset(Line.line());
 
 	auto BuffOffStart = mNewlines[Idx];
@@ -119,7 +133,6 @@ void TextChunk::replace(LineView Line) {
 
 void TextChunk::insert(LineView Line)
 {
-	mGlyphBufferDirty = true;
 	auto Idx = newlineVecOffset(Line.line());
 
 	mContentBuffer.insert(mNewlines[Idx], Line.start(), Line.length());
@@ -135,7 +148,6 @@ void TextChunk::insert(LineView Line)
 
 void TextChunk::erase(Line Line)
 {
-	mGlyphBufferDirty = true;
 	auto Idx = newlineVecOffset(Line);
 
 	auto OffStart = mNewlines[Idx];
@@ -150,6 +162,24 @@ void TextChunk::erase(Line Line)
 	mNewlines.erase(mNewlines.begin() + Idx);
 
 	unrolled_vector_add(mNewlines.begin() + Idx, mNewlines.end(), Size);
+}
+
+LineView TextChunk::lineAt(Line Line) const
+{
+	auto Idx = newlineVecOffset(Line);
+
+	auto OffStart = mNewlines[Idx];
+	auto OffEnd = mNewlines[Idx + 1];
+
+	const char* Start = &mContentBuffer[OffStart];
+	unsigned Length = OffEnd - OffStart;
+
+	return {Start, Length, Line};
+}
+
+LineView TextChunk::lastLine() const
+{
+	return lineAt(mDocSpan.end().line());
 }
 
 StringRef TextChunk::activeLineBuffer(Line Ln, bool ForceUpdate)
@@ -186,14 +216,7 @@ StringRef TextChunk::activeLineBuffer(Line Ln, bool ForceUpdate)
 	return gActiveLineBuffer;
 }
 
-void TextChunk::render()
-{
-	if (true/*mGlyphBufferDirty*/)
-	{
-		generateGlyphBuffer();
-	}
-	TextManager::Instance()->renderText(&mGlyphBuffer);
-}
+
 
 char TextChunk::deleteChar(DocPosition Pos)
 {
@@ -220,7 +243,7 @@ DocPosition TextChunk::insertChar(DocPosition Pos, char C)
 	assert(mDocSpan.contains(Pos.line()));
 
 	uint8_t NumCharRepeats = 1;
-	VestaOptions &Opts = GetOptions();
+	const VestaOptions &Opts = GetOptions();
 
 	if (C == '\n')
 	{
@@ -298,37 +321,4 @@ void TextChunk::deleteNewlineAfter(Line Ln)
 	//TODO: notify document of the deleted line
 
 	mPendingBufUpdate = false;
-}
-
-void TextChunk::generateGlyphBuffer()
-{
-	//FIXME : we dont need to flush the buffer every time we want to update.
-	// We can render the active buffer separately afterwards.
-	// NOTE: this effectively renders the buffer optimization useless
-	if (mPendingBufUpdate) {
-		//flushBuffer();
-	}
-
-	// Clear the current one before recreating it
-	mGlyphBuffer.clear();
-
-	for (Line Ln = mDocSpan.start().line();
-		Ln <= mDocSpan.end().line(); 
-		++Ln)
-	{
-		//// The active line is not up to date. Its real content 
-		//// is in the active buffer.
-		//if (Ln == gActiveLine)
-		//{
-		//	LineView ActiveLine{ (const std::string&)gActiveLineBuffer, Ln };
-		//	AddLineToVertexBuffer(ActiveLine, mGlyphBuffer);
-
-		//	continue;
-		//}
-		LineView Line = lineAt(Ln);
-
-		AddLineToVertexBuffer(Line, mGlyphBuffer);
-	}
-
-	mGlyphBufferDirty = false;
 }

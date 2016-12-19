@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <memory>
+#include <vector>
 #include "Types.h"
 
 class Cursor;
@@ -28,6 +30,22 @@ public:
 
 private:
 	Direction mDirection;
+};
+
+class DocumentAction
+{
+public:
+	enum Action : uint8_t
+	{
+		SAVE,
+	};
+
+	DocumentAction(Action A)
+		: mAction(A) { }
+
+	bool execute(Document *D) const;
+private:
+	Action mAction;
 };
 
 class EditAction
@@ -73,6 +91,21 @@ private:
 	std::string mContent;
 	DocPosition mPos;
 	bool mBackSpace;
+};
+
+class MultiEditAction : public EditAction
+{
+public:
+	MultiEditAction() : EditAction(true) {}
+	~MultiEditAction() override = default;
+	void pushBack(std::unique_ptr<EditAction> Action);
+	void pushFront(std::unique_ptr<EditAction> Action);
+
+
+	bool commit(Document*, Cursor*) override;
+	bool revert(Document*, Cursor*) override;
+private:
+	std::vector<std::unique_ptr<EditAction>> mActions;
 };
 
 

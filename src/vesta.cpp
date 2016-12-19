@@ -39,14 +39,15 @@ void Vesta::keyPressEvent(QKeyEvent* Evt)
 	Actions.analyze(Evt);
 }
 
-void Vesta::newEditWindow()
+void Vesta::newEditWindow(const char *Filename)
 {
-	auto File = std::make_shared<Document>("test.txt");
+	auto File = std::make_shared<Document>(Filename);
+	
 	TextWindow *Window = new TextWindow(nullptr, File);
 	Active = Window;
 	//TextWindow *Window2 = new TextWindow(nullptr, nullptr);
 
-	Window->setWindowTitle("first window");
+	Window->setWindowTitle(Filename);
 	Window->show();
 
 	File->open();

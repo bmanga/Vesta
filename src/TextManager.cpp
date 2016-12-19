@@ -52,9 +52,9 @@ TextManager::TextManager():
 }
 
 
- void SetGlyphVertices(const Glyph *glyph, Pen pen, Vertex *Vertices) {
-	int x0 = int(pen.pos.x + glyph->offset_x);
-	int y0 = int(pen.pos.y + glyph->offset_y);
+ void SetGlyphVertices(const Glyph *glyph, Position pos, Color col, Vertex *Vertices) {
+	int x0 = int(pos.x + glyph->offset_x);
+	int y0 = int(pos.y + glyph->offset_y);
 	int x1 = int(x0 + glyph->width);
 	int y1 = int(y0 - glyph->height);
 	float s0 = glyph->s0;
@@ -62,25 +62,16 @@ TextManager::TextManager():
 	float s1 = glyph->s1;
 	float t1 = glyph->t1;
 
-	float r = pen.col.r;
-	float g = pen.col.g;
-	float b = pen.col.b;
-	float a = pen.col.a;
+	float r = col.r;
+	float g = col.g;
+	float b = col.b;
+	float a = col.a;
 
 
-	Vertices[0] = { float(x0), float(y0), pen.pos.z,  s0, t0, r, g, b, a };
-	Vertices[1] = { float(x0), float(y1), pen.pos.z,  s0, t1, r, g, b, a };
-	Vertices[2] = { float(x1), float(y1), pen.pos.z,  s1, t1, r, g, b, a };
-	Vertices[3] = { float(x1), float(y0), pen.pos.z,  s1, t0, r, g, b, a };
+	Vertices[0] = { float(x0), float(y0), pos.z,  s0, t0, r, g, b, a };
+	Vertices[1] = { float(x0), float(y1), pos.z,  s0, t1, r, g, b, a };
+	Vertices[2] = { float(x1), float(y1), pos.z,  s1, t1, r, g, b, a };
+	Vertices[3] = { float(x1), float(y0), pos.z,  s1, t0, r, g, b, a };
 
 }
 
-FontInfo GetFontInfo(Font* F)
-{
-	auto Height = F->height();
-	auto Width  = F->getGlyph("e")->advance_x;
-
-	auto Pt = F->pt();
-
-	return{ std::string(), Pt, Width, Height };
-}

@@ -156,7 +156,7 @@ void Cursor::updateBuffer() const{
 	//Create a pen at the right position
 	float X = FontWidth * (mPos.column().offset());
 	float Y = FontHeight * (mPos.line().value());
-	Pen P{ {X, -Y, 0.5f}, {0, 0, 1, 1} };
+	Pen P{ {X, -Y, 0.5f}, {1, 1, 1, 1} };
 
 	Vertex Vertices[4];
 

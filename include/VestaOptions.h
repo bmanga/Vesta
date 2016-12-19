@@ -3,8 +3,6 @@
 #include "TextManager.h"
 #include "Freetype-core/TextureFont.h"
 
-
-namespace {
 class TextEditorOpts
 {
 public:
@@ -25,10 +23,10 @@ public:
 	float Height;
 	uint8_t Pt;
 };
-}
+
 class VestaOptions
 {
-	friend VestaOptions &GetOptions();
+	friend VestaOptions &Init();
 	friend class OptionsChanger;
 public:
 	VestaOptions(const VestaOptions &) = delete;
@@ -59,16 +57,15 @@ private:
 	FontOpts mFontOpts;
 };
 
-VestaOptions &GetOptions();
+const VestaOptions &GetOptions();
 
 // This is the class that allows to modify the VestaOptions
 class OptionsChanger
 {
 public:
-	OptionsChanger()
-		: mOptions(GetOptions()){ }
+	OptionsChanger();
 
-	void setFontSize(uint8_t Pt)
+	void setFontSize(uint8_t Pt) const
 	{
 		mOptions.setFontSize(Pt);
 	}

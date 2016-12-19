@@ -39,7 +39,7 @@ class LineNumberArea
 ScreenPosition ScreenPositionSelector::getDocLocation(int x, int y) const
 {
 	// FIXME
-	VestaOptions &Opts = GetOptions();
+	const VestaOptions &Opts = GetOptions();
 	float FontHeight = Opts.font().Height;
 	float FontWidth = Opts.font().Width;
 	unsigned NumLines = static_cast<unsigned>(mWinSize.y / FontHeight);
@@ -51,19 +51,16 @@ ScreenPosition ScreenPositionSelector::getDocLocation(int x, int y) const
 TextWindow::TextWindow(QWidget *Parent, SharedDocument File)
 	: QOpenGLWidget(Parent), mDocument(File)
 	, mTextBuffer("vertex:3f,tex_coord:2f,color:4f")
+	, mDocRenderer(mDocument.get())
 {
 	//Leave space for the first glyph, which is always going to be the cursor
 	GLuint Indices [6] = { 0, 1, 2, 0, 2, 3 };
 	Vertex Vertices[4]{};
 	mTextBuffer.push_back((const char*)Vertices, 4, Indices, 6);
 
-	if (!mDocument)
-	{
-		mDocument = std::make_shared<Document>();
-	}
 
 	mCursor = 
-		std::make_unique<Cursor>(mDocument.get(), FontInfo{});
+		std::make_unique<Cursor>(mDocument.get());
 }
 
 
@@ -110,7 +107,7 @@ void TextWindow::paintGL() {
 	//if (mTextBuffer.empty())
 	//	return;
 
-	glClearColor(1, 1, 1, 1);
+	glClearColor(0.05, 0.05, 0.05, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_BLEND);
@@ -118,7 +115,7 @@ void TextWindow::paintGL() {
 
 	//TextManager::Instance()->renderText(&mTextBuffer);
 	//if(mDirtyBuffer)
-	mDocument->render();
+	mDocRenderer.render();
 	mCursor->render();
 }
 
@@ -172,4 +169,12 @@ bool TextWindow::handleAction(NavigateAction Action)
 
 	repaint();
 	return Res;
+}
+
+bool TextWindow::handleAction(DocumentAction Action)
+{
+	bool Success = Action.execute(mDocument.get());
+
+	repaint();
+	return Success;
 }

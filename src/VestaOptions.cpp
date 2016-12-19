@@ -1,5 +1,12 @@
 #include "VestaOptions.h"
 
+// FIXME: Ugly workaround until we get guaranteed copy elision.
+VestaOptions &Init() 
+{
+	static VestaOptions Opts;
+	return Opts;
+}
+
 
 VestaOptions::VestaOptions()
 {
@@ -12,8 +19,11 @@ VestaOptions::VestaOptions()
 
 }
 
-VestaOptions &GetOptions()
+const VestaOptions &GetOptions()
 {
-	static VestaOptions Opts;
-	return Opts;
+	return Init();
+}
+
+OptionsChanger::OptionsChanger(): mOptions(Init())
+{
 }

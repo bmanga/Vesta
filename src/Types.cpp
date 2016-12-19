@@ -1,7 +1,9 @@
 #include "Types.h"
 #include "VestaOptions.h"
+#include <string>
 
-bool DocPosRange::contains(Line Line) const {
+
+bool DocRange::contains(Line Line) const {
 	return mStart.line() <= Line &&
 		mEnd.line() >= Line;
 }
@@ -27,7 +29,7 @@ DocPosition LineView::endOfLine() const {
 	unsigned NumTabs = count('\t');
 	// FIXME : this needs to change as soon as we have a global settings 
 	// instance
-	VestaOptions &Opts = GetOptions();
+	const VestaOptions &Opts = GetOptions();
 
 	unsigned TabSize = Opts.textEditor().TabSize;
 
@@ -48,7 +50,7 @@ DocPosition LineView::position(ScreenPosition SP, bool BeforeTab) const
 	if (SP.column() > endOfLine().column())
 		return endOfLine();
 
-	VestaOptions &Opts = GetOptions();
+	const VestaOptions &Opts = GetOptions();
 	unsigned TabSize = Opts.textEditor().TabSize;
 
 	unsigned ClPos = 1;

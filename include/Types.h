@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
+
 #include <cassert>
 #include <cstdint>
-
+#include <string>
 
 
 struct Position
@@ -161,11 +161,11 @@ private:
 };
 
 
-class DocPosRange
+class DocRange
 {
 public:
-	DocPosRange() = default;
-	DocPosRange(DocPosition Start, DocPosition End)
+	DocRange() = default;
+	DocRange(DocPosition Start, DocPosition End)
 		: mStart(Start)
 		, mEnd(End)
 	{ }
@@ -200,21 +200,6 @@ private:
 };
 
 
-struct Vertex
-{
-	float x, y, z;    // position
-	float s, t;       // texture
-	float r, g, b, a; // color
-};
-
-struct FontInfo
-{
-	std::string Name;
-	float Pt;
-	float Width;
-	float Height;
-};
-
 
 class LineView
 {
@@ -223,8 +208,8 @@ public:
 	{
 		return LineView{ nullptr, 0, Line{1} };
 	}
-	LineView(const std::string& Start, Line Line);
-	LineView(const char* Start, size_t Len, Line Line);
+	LineView(const std::string &Start, Line Line);
+	LineView(const char *Start, size_t Len, Line Line);
 
 	unsigned count(const char C, Character Off = Character(1)) const;
 
@@ -236,7 +221,7 @@ public:
 
 	DocPosition endOfLine() const;
 	DocPosition startOfLine() const;
-	DocPosRange lineRange() const {
+	DocRange lineRange() const {
 		return{ startOfLine(), endOfLine() };
 	}
 
@@ -257,9 +242,10 @@ public:
 		return mLine;
 	}
 
-	std::string str() const {
+	std::string str() const
+	{
 		assert(isValid());
-		return{ mStart, mLength };
+		return std::string{ mStart, mLength };
 	}
 
 	bool isValid() const {
