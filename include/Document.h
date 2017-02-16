@@ -62,7 +62,7 @@ public:
 	}
 
 private:
-	auto containingTextChunk(Line Ln) const
+	const auto containingTextChunk(Line Ln) const
 	{
 		auto It = std::find_if(mChunks.begin(), mChunks.end(), 
 			[Ln](const TextChunk &TC)

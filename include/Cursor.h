@@ -23,24 +23,27 @@ public:
 
 	void moveTo(DocPosition Pos);
 
+	void highlight(DocRange Range);
 
 	void prev(unsigned N = 1, bool AcrossLines = true);
 	void next(unsigned N = 1, bool AcrossLines = true);
-	void nextWord();
+	DocPosition nextWord();
 	void up(unsigned N = 1);
 	void down(unsigned N = 1);
 	void eol();
 	DocPosition getPosition() const { return mPos; }
+	DocRange getSelection() const { return mSelection; }
 
 	Document *getUnderlyingDocument() const { return nullptr; }
 
-	void updateBuffer() const;
+	void updateBuffer();
 
 	static void render();
 
 private:
 	Document *mDocument;
 	DocPosition mPos;
+	DocRange mSelection;
 	Column mIdealCol{1}; // Used to remember column while moving across lines
 };
 

@@ -29,6 +29,7 @@ ExecuteOnce _([&]()
 	Vertex Vertices[4] = {};
 	constexpr static GLuint Indices[] = { 0, 1, 2, 0, 2, 3 };
 	gCursorBuffer.push_back((const char*)Vertices, 4, Indices, 6);
+	gCursorBuffer.push_back((const char*)Vertices, 4, Indices, 6);
 });
 
 
@@ -52,15 +53,44 @@ void SetCursorVertices(const Glyph *glyph, Pen pen, Vertex *Vertices) {
 	Vertices[1] = { float(x0), float(y1), pen.pos.z,  s0, t1, r, g, b, a };
 	Vertices[2] = { float(x1), float(y1), pen.pos.z,  s1, t1, r, g, b, a };
 	Vertices[3] = { float(x1), float(y0), pen.pos.z,  s1, t0, r, g, b, a };
+}
 
+void SetHighlightVertices(const Glyph *Glyph, Pen Start, 
+	Pen End, Vertex *Vertices)
+{
+	int x0 = int(Start.pos.x);
+	int y0 = int(Start.pos.y + Glyph->offset_y);
+	int x1 = int(End.pos.x + Glyph->width);
+	int y1 = int(End.pos.y - Glyph->height / 3);
+	float s0 = Glyph->s0;
+	float t0 = Glyph->t0;
+	float s1 = Glyph->s1;
+	float t1 = Glyph->t1;
+
+	float r = Start.col.r;
+	float g = Start.col.g;
+	float b = Start.col.b;
+	float a = Start.col.a;
+
+
+	Vertices[0] = { float(x0), float(y0), Start.pos.z,  s0, t0, r, g, b, a };
+	Vertices[1] = { float(x0), float(y1), Start.pos.z,  s0, t1, r, g, b, a };
+	Vertices[2] = { float(x1), float(y1), Start.pos.z,  s1, t1, r, g, b, a };
+	Vertices[3] = { float(x1), float(y0), Start.pos.z,  s1, t0, r, g, b, a };
 }
-}
+
+} // namespace
 
 void Cursor::moveTo(DocPosition Pos)
 {
 	mPos = Pos;
 	
 	mIdealCol = Pos.column();
+}
+
+void Cursor::highlight(DocRange Selection)
+{
+	mSelection = Selection;
 }
 
 void Cursor::prev(unsigned N, bool AcrossLines)
@@ -112,13 +142,15 @@ void Cursor::next(unsigned N, bool AcrossLines) {
 	mIdealCol = mPos.column();
 }
 
-void Cursor::nextWord()
+DocPosition Cursor::nextWord()
 {
 	LineView LV = mDocument->lineAt(mPos.line());
 
 	DocRange Token = LV.tokenAt(mPos.character());
 
 	moveTo(Token.end());
+
+	return Token.end();
 }
 
 void Cursor::up(unsigned N)
@@ -151,9 +183,10 @@ void Cursor::eol()
 	mPos = Line.endOfLine();
 }
 
-void Cursor::updateBuffer() const{
-	
-
+void Cursor::updateBuffer()
+{
+	constexpr static GLuint Indices[] = { 0, 1, 2, 0, 2, 3 };
+	gCursorBuffer.clear();
 	// FIXME
 	const VestaOptions &Opts = GetOptions();
 	auto *Font = Opts.font().Font;
@@ -169,11 +202,81 @@ void Cursor::updateBuffer() const{
 
 	Vertex Vertices[4];
 
-	// TODO: Scale the cursor vertices so that it looks e bit bigger 
-	// (and thinner) than the normal '|'
 	SetCursorVertices(Glyph, P, Vertices);
 
-	gCursorBuffer.replaceVertices(0, (const char*)Vertices, 4);
+	//gCursorBuffer.replaceVertices(0, (const char*)Vertices, 4);
+	gCursorBuffer.push_back((const char*)Vertices, 4, Indices, 6);
+
+
+	// Deal with the cursor selection
+	if (!mSelection.isValid()) {
+		return;
+	}
+
+
+
+	Vertex SelVertices[4];
+	
+	//gCursorBuffer.replaceVertices(1, (const char *)SelVertices, 4);
+	if (mSelection.containedLines() == 1) {
+		DocPosition Start = mSelection.start();
+		DocPosition End = mSelection.end();
+
+		float SelX0 = FontWidth * (Start.column().offset());
+		float SelY0 = FontHeight * (Start.line().value());
+		float SelX1 = FontWidth * (End.column().offset());
+		float SelY1 = FontHeight * (End.line().value());
+		Pen SelStart{ { SelX0, -SelY0, 0.5f },{ 0, 0.3, 1, 0.6 } };
+		Pen SelEnd{ { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2 } };
+		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
+		gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
+	}
+	else {
+		mSelection.normalize();
+		DocPosition Start = mSelection.start();
+		// We deal with first and last line separately.
+		Line L = Start.line();
+		DocPosition End = mDocument->lineAt(L).endOfLine();
+
+		float SelX0 = FontWidth * (Start.column().offset());
+		float SelY0 = FontHeight * (Start.line().value());
+		float SelX1 = FontWidth * (End.column().offset());
+		float SelY1 = FontHeight * (End.line().value());
+		Pen SelStart{ { SelX0, -SelY0, 0.5f },{ 0, 0.3, 1, 0.6 } };
+		Pen SelEnd{ { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2 } };
+		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
+		gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
+
+		// Deal with the middle lines
+		unsigned LineCnt = mSelection.containedLines() - 2;
+		while (++L != mSelection.end().line()) {
+			End = mDocument->lineAt(L).endOfLine();
+			SelX0 = 0;
+			SelY0 = FontHeight * L.value();
+			SelX1 = FontWidth * (End.column().offset());
+			SelY1 = FontHeight * (End.line().value());
+			SelStart = { { SelX0, -SelY0, 0.5f },{ 0, 0.3f, 1, 0.6f } };
+			SelEnd = { { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2f } };
+			SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
+			gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
+		}
+
+		// Deal with the last line
+		End = mSelection.end();
+		SelX0 = 0;
+		SelY0 = FontHeight * L.value();
+		SelX1 = FontWidth * (End.column().offset());
+		SelY1 = FontHeight * (End.line().value());
+		SelStart = { { SelX0, -SelY0, 0.5f },{ 0, 0.3f, 1, 0.6f } };
+		SelEnd = { { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2f } };
+		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
+		gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
+
+
+
+
+	}
+
 }
 
 void Cursor::render()

@@ -35,6 +35,10 @@ private:
 
 /* TextChunk is the class responsible for a chunk of text.
  *
+ * Edits are applied either by
+ * -> replacing a line through the LineView class
+ * -> modifying the activeLineBuffer string
+ * -> using the deleteChar/insertChar functions.
  */
 
 class TextChunk
@@ -55,8 +59,6 @@ public:
 
 
 	StringRef activeLineBuffer(Line Ln, bool ForceUpdate = false);
-
-
 	
 	char deleteChar(DocPosition Pos);
 	DocPosition insertChar(DocPosition Pos, char C);

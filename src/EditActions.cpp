@@ -3,7 +3,7 @@
 #include "Cursor.h"
 #include "Document.h"
 
-
+DocPosition S, E;
 bool NavigateAction::execute(Cursor* C) const
 {
 	switch (mDirection)
@@ -15,7 +15,10 @@ bool NavigateAction::execute(Cursor* C) const
 		C->next();
 		break;
 	case NextToken:
-		C->nextWord();
+		// FIXME test code
+		S = C->getPosition();
+		E = C->nextWord();
+		C->highlight({ S, E });
 		break;
 	case Up:
 		C->up();

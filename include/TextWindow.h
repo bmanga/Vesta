@@ -88,6 +88,7 @@ private:
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 	void mousePressEvent(QMouseEvent *Evt) override;
+	void mouseMoveEvent(QMouseEvent *Evt) override;
 	//void keyPressEvent(QKeyEvent *Evt) override;
 	void repaint();
 

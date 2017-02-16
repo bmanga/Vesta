@@ -35,10 +35,10 @@ class LineNumberArea
 	
 };
 
-
 ScreenPosition ScreenPositionSelector::getDocLocation(int x, int y) const
 {
-	// FIXME
+	x = std::max(x, 0);
+	y = std::max(y, 0);
 	const VestaOptions &Opts = GetOptions();
 	float FontHeight = Opts.font().Height;
 	float FontWidth = Opts.font().Width;
@@ -135,7 +135,24 @@ void TextWindow::mousePressEvent(QMouseEvent* Evt)
 
 	auto Pos = mDocument->position(SPos);
 	mCursor->moveTo(Pos);
+	mCursor->highlight({ Pos, Pos });
 	this->repaint();
+}
+
+void TextWindow::mouseMoveEvent(QMouseEvent * Evt) 
+{
+	if (!(Evt->buttons() & Qt::LeftButton)) {
+		return;
+	}
+
+	auto SPos = mDocPosSelector.getDocLocation(Evt->pos().x(), Evt->pos().y());
+	auto EndPos = mDocument->position(SPos);
+	auto StartPos = mCursor->getSelection().start();
+
+	mCursor->highlight({ StartPos, EndPos });
+	mCursor->moveTo(EndPos);
+	this->repaint();
+
 }
 
 

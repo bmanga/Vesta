@@ -190,7 +190,20 @@ public:
 
 	unsigned containedLines() const
 	{
-		return mEnd.line().value() - mStart.line().value();
+		return mEnd.line().value() - mStart.line().value() + 1;
+	}
+
+	// Return true if it is a valid range.
+	bool isValid() const
+	{
+		return mStart != mEnd;
+	}
+
+	void normalize() 
+	{
+		if (mEnd > mStart) return;
+
+		std::swap(mStart, mEnd);
 	}
 
 	bool contains(Line Line) const;
