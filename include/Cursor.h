@@ -26,6 +26,7 @@ public:
 
 	void prev(unsigned N = 1, bool AcrossLines = true);
 	void next(unsigned N = 1, bool AcrossLines = true);
+	void nextWord();
 	void up(unsigned N = 1);
 	void down(unsigned N = 1);
 	void eol();

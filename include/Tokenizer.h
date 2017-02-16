@@ -20,11 +20,12 @@ public:
 		Global = 0
 	};
 
-	Trigger(std::string Value, CallbackT CB, ActivationKind AK = Global, bool RequiresStreaming = false) 
+	Trigger(std::string Value, CallbackT CB, ActivationKind AK = Global, bool KeySeqMatch = false, bool RequiresStreaming = false)
 		: mValue(std::move(Value))
 		, mCallback(CB)
 		, mActivationKind(AK)
-		, mStreamNext(RequiresStreaming){}
+		, mStreamNext(RequiresStreaming)
+		, mExactKeySeqMatch(KeySeqMatch) {}
 
 	size_t length() const {
 		return mValue.size();
@@ -36,7 +37,7 @@ public:
 		return mValue[Idx];
 	}
 
-	void activate(TextWindow *TW, char C) {
+	void fire(TextWindow *TW, char C) {
 		mCallback(TW, C);
 	}
 
@@ -47,17 +48,26 @@ public:
 	bool requiresStreaming() const {
 		return mStreamNext;
 	}
+
+	bool exactKeySeqMatchOnly() const {
+		return mExactKeySeqMatch;
+	}
 private:
 
 private:
-	// if a trigger is activated, stream the following chars to the callback
+	// If a trigger is activated, stream the following chars to the callback
 	bool mStreamNext = false;
+	bool mExactKeySeqMatch; // Whether undos are allowed
+
 	ActivationKind mActivationKind = ActivationKind::Immediate;
 	std::string mValue;
 	CallbackT mCallback;
 };
 
-
+/*
+* Deals with the actual trigger behavior. Holds the state of the trigger
+* it is bound with. 
+*/
 
 class TriggerOpt
 {
@@ -68,6 +78,12 @@ public:
 	bool eval(char C) {
 		if (mInvalid) {
 			return false;
+		}
+
+		// Deal with backspaces
+		if (!mTrigger->exactKeySeqMatchOnly() && C == 8) {
+			if (mIdx) --mIdx;
+			return true;
 		}
 
 		if (mIdx >= mTrigger->length()) {
@@ -92,20 +108,24 @@ public:
 		}
 		return Ok;
 	}
-	
-	void activate(Trigger::ActivationKind AK, TextWindow *TK, char C) {
+	// Try to fire the trigger.
+	// \Return true if successful.
+	bool activate(Trigger::ActivationKind AK, TextWindow *TK, char C) {
 		if (!mReady) {
-			return;
+			return false;
+		}
+		if (!(mTrigger->getActivationKind() & AK)) {
+			return false;
 		}
 
-		if ((mTrigger->getActivationKind() & AK) || mTrigger->requiresStreaming()) {
-			mTrigger->activate(TK, C);
-			if (!mTrigger->requiresStreaming()) {
-				reset();
-			}
+		mTrigger->fire(TK, C);
+		if (!mTrigger->requiresStreaming()) {
+			reset();
 		}
-
+		
+		return true;
 	}
+
 	void reset() {
 		mInvalid = false;
 		mReady = false;
@@ -143,13 +163,19 @@ public:
 			mCandidates.emplace_back(&mTriggers[j]);
 		}
 	}
-	void processInput(TextWindow *TW, char Char) {
+	// Process the provided character for non-immediate triggers.
+	// \Return true if any of the triggers fired
+	// and the character should be swallowed.
+	bool processAndSwallow(TextWindow *TW, char Char) {
+		bool FiredOne = false;
+
 		// Space resets every Trigger
+		// FIXME this is probably not what we want
 		if (Char == ' ') {
 			for (auto && Candidate : mCandidates) {
 				Candidate.reset();
 			}
-			return;
+			return false;
 		}
 
 		if (Char == '\t' || Char == '\n') {
@@ -160,11 +186,11 @@ public:
 			}
 
 			for (auto &&Candidate : mCandidates) {
-				Candidate.activate(AK, TW, Char);
+				FiredOne |= Candidate.activate(AK, TW, Char);
 				Candidate.reset();
 			}
 
-			return;
+			return FiredOne;
 		}
 		
 		// TODO: Optimization opportunity : 
@@ -174,14 +200,19 @@ public:
 			Candidate.eval(Char);
 		}
 
+		return false;
+	}
 
+	// Process the provided character for immediate triggers.
+	// \Return true if any of the triggers fired
+	bool processImmediates(TextWindow *TW, char Char) {
+		bool FiredOne = false;
 		// Run the immediate triggers
 		for (auto &&Candidate : mCandidates) {
-			Candidate.activate(Trigger::ActivationKind::Immediate, TW, Char);
+			FiredOne |= Candidate.activate(Trigger::ActivationKind::Immediate, TW, Char);
 		}
 
-
-
+		return FiredOne;
 	}
 private:
 	std::vector<Trigger> mTriggers;

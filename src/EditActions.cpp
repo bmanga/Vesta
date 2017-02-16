@@ -14,6 +14,9 @@ bool NavigateAction::execute(Cursor* C) const
 	case Next:
 		C->next();
 		break;
+	case NextToken:
+		C->nextWord();
+		break;
 	case Up:
 		C->up();
 		break;

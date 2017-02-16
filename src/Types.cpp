@@ -45,6 +45,46 @@ DocPosition LineView::startOfLine() const {
 	return DocPosition(mLine, Column(1), Character(1));
 }
 
+DocRange LineView::tokenAt(Character DP) {
+	unsigned OffsetB = DP.offset();
+	unsigned OffsetF = OffsetB;
+
+	const char *TokenSeam = " :!<.>()[]{}=";
+	while (OffsetB != 0) {
+		--OffsetB;
+		if (std::any_of(TokenSeam, TokenSeam + 13, [this, &OffsetB](char C) {
+			return mStart[OffsetB] == C; }
+		)) {
+			break;
+		}
+
+	}
+	
+	// FIXME avoid this ugliness
+	// If the current one is a TokenSeam, just increase by 1 and return
+	if (std::any_of(TokenSeam, TokenSeam + 11, [this, &OffsetF](char C) {
+		return mStart[OffsetF] == C; }
+	)) {
+		++OffsetF;
+		goto END;
+	}
+
+	while (OffsetF < endOfLine().character().offset()) {
+		
+		if (std::any_of(TokenSeam, TokenSeam + 11, [this, &OffsetF](char C) {
+			return mStart[OffsetF] == C; }
+		)) {
+			break;
+		}
+		++OffsetF;
+	}
+
+END:	// FIXME this ignores tabs
+	DocPosition TokenStart{ mLine, Column(OffsetB, Column::OFFSET), Character(OffsetB, Character::OFFSET) };
+	DocPosition TokenEnd{ mLine, Column(OffsetF, Column::OFFSET), Character(OffsetF, Character::OFFSET) };
+	return{ TokenStart, TokenEnd };
+}
+
 DocPosition LineView::position(ScreenPosition SP, bool BeforeTab) const
 {
 	if (SP.column() > endOfLine().column())

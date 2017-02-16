@@ -15,6 +15,7 @@ public:
 	{
 		Prev,
 		Next,
+		NextToken,
 		Up,
 		Down,
 		EndOfLine,

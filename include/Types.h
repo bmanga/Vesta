@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
+#include <algorithm>
 
 
 struct Position
@@ -224,6 +225,8 @@ public:
 	DocRange lineRange() const {
 		return{ startOfLine(), endOfLine() };
 	}
+
+	DocRange tokenAt(Character DP);
 
 	DocPosition position(ScreenPosition SP, bool BeforeTab = true) const;
 

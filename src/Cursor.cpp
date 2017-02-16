@@ -112,6 +112,15 @@ void Cursor::next(unsigned N, bool AcrossLines) {
 	mIdealCol = mPos.column();
 }
 
+void Cursor::nextWord()
+{
+	LineView LV = mDocument->lineAt(mPos.line());
+
+	DocRange Token = LV.tokenAt(mPos.character());
+
+	moveTo(Token.end());
+}
+
 void Cursor::up(unsigned N)
 {
 	auto Ln = mPos.line().value();

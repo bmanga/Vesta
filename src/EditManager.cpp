@@ -48,7 +48,7 @@ private:
 
 ActionManager::ActionManager(TextWindow *& Active)
 	: mActiveWindow(Active) {
-	Trigger Test{ "Dio", callback2, Trigger::ActivationKind::Tab };
+	Trigger Test{ "Dio", callback2, Trigger::ActivationKind::Tab, false};
 	mLexer.add(std::move(Test));
 	Trigger Test2{ "Madonna", callback };
 	mLexer.add(std::move(Test2));
@@ -59,15 +59,22 @@ ActionManager::ActionManager(TextWindow *& Active)
 		TW->handleRequest(Request(std::make_unique<TypeAction>("Cunt")));
 		//TW->handleAction(NavigateAction::Prev);
 	},
-	Trigger::ActivationKind::Tab};
+	Trigger::ActivationKind::Immediate};
 
 	mLexer.add(std::move(Test3));
 }
 
 bool ActionManager::analyze(QKeyEvent* Event) {
 	char NewChar = Event->text()[0].toLatin1();
+	if (NewChar == '{') {
+		gOpenBraceEvent = true;
+		++gOpenBraces;
+	}
+	if (NewChar == '\r') NewChar = '\n';
 	if (NewChar != 0)
-		mLexer.processInput(mActiveWindow, NewChar);
+		if (mLexer.processAndSwallow(mActiveWindow, NewChar)) {
+			return true;
+		}
 	uptr<MultiEditAction> actions = std::make_unique<MultiEditAction>();
 
 	auto Key = Event->key();
@@ -99,6 +106,8 @@ bool ActionManager::analyze(QKeyEvent* Event) {
 		return mActiveWindow->handleAction(NavigateAction::Prev);
 	case Qt::Key_Right:
 		return mActiveWindow->handleAction(NavigateAction::Next);
+	case Qt::Key_Alt:
+		return mActiveWindow->handleAction(NavigateAction::NextToken);
 		
 	default:
 		;
@@ -122,10 +131,11 @@ bool ActionManager::analyze(QKeyEvent* Event) {
 
 				for (int j = 0; j < gOpenBraces - 1; ++j)
 					actions->pushBack(std::make_unique<TypeAction>("\t"));
-
+				actions->pushBack(std::make_unique<TypeAction>("}"));
 				mActiveWindow->handleRequest(Request(std::move(actions)));
 				mActiveWindow->handleAction(NavigateAction::Up);
 				mActiveWindow->handleAction(NavigateAction::EndOfLine);
+				gOpenBraceEvent = false;
 				return true;
 
 			}
@@ -133,7 +143,9 @@ bool ActionManager::analyze(QKeyEvent* Event) {
 		}
 		actions->pushFront(std::make_unique<TypeAction>(Text));
 		Request R(std::move(actions));
-		return mActiveWindow->handleRequest(std::move(R));
+		bool Ok = mActiveWindow->handleRequest(std::move(R));
+		mLexer.processImmediates(mActiveWindow, NewChar);
+		return Ok;
 	}
 
 	return false;
