@@ -1,6 +1,7 @@
 #include "TextChunk.h"
 #include <VestaOptions.h>
 #include "TextManager.h"
+#include <sstream>
 
 namespace __Impl {
 static std::string __gActiveLineBuffer;
@@ -162,6 +163,17 @@ void TextChunk::erase(Line Line)
 	mNewlines.erase(mNewlines.begin() + Idx);
 
 	unrolled_vector_add(mNewlines.begin() + Idx, mNewlines.end(), Size);
+
+	DocPosition OldEnd = mDocSpan.end();
+	DocPosition NewEnd;
+	if (Line != mDocSpan.end().line()) {
+		NewEnd = { --OldEnd.line(), OldEnd.column(), OldEnd.character() };
+	}
+	else {
+		NewEnd = { lineAt(--OldEnd.line()).endOfLine() };
+	}
+
+	mDocSpan.setEnd(NewEnd);
 }
 
 LineView TextChunk::lineAt(Line Line) const
@@ -238,7 +250,8 @@ char TextChunk::deleteChar(DocPosition Pos)
 	return Deleted;
 }
 
-std::string TextChunk::deleteRange(DocRange Rng) {
+std::string TextChunk::deleteRange(DocRange Rng) 
+{
 	mPendingBufUpdate = true;
 	size_t CharCnt = Rng.containedCharacters(this);
 
@@ -254,12 +267,52 @@ std::string TextChunk::deleteRange(DocRange Rng) {
 
 		return Deleted;
 	}
-	std::string Deleted;
-	Deleted.reserve(CharCnt);
+	
+	// In multiple line deletion, we consider first, last and middle 
+	// lines separately.
+	// FIXME: We could combine the string retrieval and the deletion operations
+	std::stringstream Deleted;
+	Line L = Rng.start().line();
+	LineView LV = lineAt(L);
 
-	return "";
+	const char *Start = LV.start() + Rng.start().character().offset();
+	const char *End = LV.start() + LV.endOfLine().character().offset();
+
+	Deleted.write(Start, End - Start);
+	Deleted << '\n';
+
+	deleteRange({ Rng.start(), LV.endOfLine() });
+
+	// Deal with middle lines.
+	++L;
+	unsigned LDiff = Rng.end().line().offset() - L.offset();
+	for (unsigned j = 0; j < LDiff; ++j) {
+		Deleted << lineAt(L);
+		erase(L);
+	}
+
+	// Deal with last line.
+	LV = lineAt(L);
+	Start = LV.start();
+	End = LV.start() + Rng.end().character().offset();
+
+	Deleted.write(Start, End - Start);
+	Deleted << '\n';
+
+	// Deal with deletion.
+	DocPosition OldEnd = Rng.end();
+	DocPosition NewEnd{ Line{OldEnd.line().value() - LDiff }, OldEnd.column(), OldEnd.character() };
+	deleteRange({ LV.startOfLine(), NewEnd });
+
+	deleteNewlineAfter(Rng.start().line());
+
+	return Deleted.str();
 
 
+}
+
+std::string TextChunk::replaceRange(DocRange Rng) {
+	return std::string();
 }
 
 DocPosition TextChunk::insertChar(DocPosition Pos, char C)

@@ -76,6 +76,12 @@ public:
 		return ThisType { mValue++ };
 	}
 
+	ThisType &operator--() {
+		assert(mValue > 1);
+		--mValue;
+		return *this;
+	}
+
 private:
 	unsigned mValue;
 };
@@ -97,6 +103,7 @@ public:
 
 	auto line() const { return mLine; }
 	auto column() const { return mColumn; }
+
 protected:
 	Line mLine;
 	Column mColumn;
@@ -294,6 +301,12 @@ public:
 
 	bool isValid() const {
 		return mStart != nullptr;
+	}
+
+	friend std::ostream &operator<< (std::ostream &Out, const LineView &LV)
+	{
+		Out.write(LV.mStart, LV.mLength);
+		return Out << '\n';
 	}
 private:
 	const char *mStart;
