@@ -1,6 +1,8 @@
 #include "Types.h"
 #include "VestaOptions.h"
 #include <string>
+#include "Document.h"
+
 
 
 bool DocRange::contains(Line Line) const {

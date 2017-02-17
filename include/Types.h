@@ -161,6 +161,7 @@ private:
 	Character mCharacter;
 };
 
+class Document;
 
 class DocRange
 {
@@ -169,7 +170,8 @@ public:
 	DocRange(DocPosition Start, DocPosition End)
 		: mStart(Start)
 		, mEnd(End)
-	{ }
+	{
+	}
 	DocPosition start() const {
 		return mStart;
 	}
@@ -191,6 +193,32 @@ public:
 	unsigned containedLines() const
 	{
 		return mEnd.line().value() - mStart.line().value() + 1;
+	}
+
+	template <class LnContainer>
+	unsigned containedCharacters(const LnContainer *LC) const {
+		assert(mStart < mEnd);
+
+		if (containedLines() == 1) {
+			return mEnd.character().offset() - mStart.character().offset();
+		}
+
+		Line L = mStart.line();
+		unsigned CharCnt = LC->lineAt(L).endOfLine().character().offset() -
+			mStart.character().offset() + 1;
+		while (++L < mEnd.line()) {
+			CharCnt += LC->lineAt(L).endOfLine().character().offset() + 1;
+		}
+		CharCnt += mEnd.character().offset();
+
+		return CharCnt;
+	}
+
+	template <class LnContainer>
+	unsigned containedCharacters(const LnContainer *LC)
+	{
+		normalize();
+		return const_cast<const DocRange *>(this)->containedCharacters(LC);
 	}
 
 	// Return true if it is a valid range.

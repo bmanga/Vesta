@@ -247,7 +247,7 @@ void Cursor::updateBuffer()
 		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
 		gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
 
-		// Deal with the middle lines
+		// Deal with the middle lines.
 		unsigned LineCnt = mSelection.containedLines() - 2;
 		while (++L != mSelection.end().line()) {
 			End = mDocument->lineAt(L).endOfLine();
@@ -261,7 +261,7 @@ void Cursor::updateBuffer()
 			gCursorBuffer.push_back((const char*)SelVertices, 4, Indices, 6);
 		}
 
-		// Deal with the last line
+		// Deal with the last line.
 		End = mSelection.end();
 		SelX0 = 0;
 		SelY0 = FontHeight * L.value();

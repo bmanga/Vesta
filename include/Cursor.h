@@ -24,6 +24,10 @@ public:
 	void moveTo(DocPosition Pos);
 
 	void highlight(DocRange Range);
+	void unhighlight() 
+	{
+		mSelection = { mPos, mPos };
+	}
 
 	void prev(unsigned N = 1, bool AcrossLines = true);
 	void next(unsigned N = 1, bool AcrossLines = true);
@@ -32,7 +36,8 @@ public:
 	void down(unsigned N = 1);
 	void eol();
 	DocPosition getPosition() const { return mPos; }
-	DocRange getSelection() const { return mSelection; }
+	DocRange getSelection()  { return mSelection; }
+
 
 	Document *getUnderlyingDocument() const { return nullptr; }
 

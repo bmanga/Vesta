@@ -238,6 +238,30 @@ char TextChunk::deleteChar(DocPosition Pos)
 	return Deleted;
 }
 
+std::string TextChunk::deleteRange(DocRange Rng) {
+	mPendingBufUpdate = true;
+	size_t CharCnt = Rng.containedCharacters(this);
+
+	if (Rng.containedLines() == 1) {
+		LineView LV = lineAt(Rng.start().line());
+		const char *Start = LV.start() + Rng.start().character().offset();
+		const char *End = LV.start() + Rng.end().character().offset();
+		std::string Deleted{ Start, End };
+
+		StringRef Buf = activeLineBuffer(Rng.start().line());
+		Buf->erase(Rng.start().character().offset(), End - Start);
+		flushBuffer();
+
+		return Deleted;
+	}
+	std::string Deleted;
+	Deleted.reserve(CharCnt);
+
+	return "";
+
+
+}
+
 DocPosition TextChunk::insertChar(DocPosition Pos, char C)
 {
 	assert(mDocSpan.contains(Pos.line()));

@@ -1,4 +1,6 @@
 #include <fstream>
+#include <sstream>
+#include <iostream> //Debug purposes
 #include "Document.h"
 #include "EditActions.h"
 
@@ -70,6 +72,13 @@ char Document::deleteChar(DocPosition Pos)
 	auto ChunkIt = containingTextChunk(Pos.line());
 
 	return ChunkIt->deleteChar(Pos);
+}
+
+std::string Document::deleteRange(DocRange Rng) 
+{
+	// FIXME we assume the whole range is within the same chunk
+	auto ChunkIt = containingTextChunk(Rng.start().line());
+	return ChunkIt->deleteRange(Rng);
 }
 
 DocPosition Document::position(ScreenPosition SPos)

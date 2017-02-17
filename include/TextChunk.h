@@ -61,6 +61,8 @@ public:
 	StringRef activeLineBuffer(Line Ln, bool ForceUpdate = false);
 	
 	char deleteChar(DocPosition Pos);
+	std::string deleteRange(DocRange Rng);
+
 	DocPosition insertChar(DocPosition Pos, char C);
 
 	bool contains(Line Ln) const;

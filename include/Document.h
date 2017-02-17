@@ -34,6 +34,9 @@ public:
 	void save();
 
 	char deleteChar(DocPosition Pos);
+	std::string deleteRange(DocRange Rng);
+
+
 
 
 	DocPosition position(ScreenPosition SPos);

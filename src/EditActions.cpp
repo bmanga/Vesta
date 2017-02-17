@@ -2,8 +2,8 @@
 
 #include "Cursor.h"
 #include "Document.h"
+#include <iostream> //Debug purposes
 
-DocPosition S, E;
 bool NavigateAction::execute(Cursor* C) const
 {
 	switch (mDirection)
@@ -15,10 +15,7 @@ bool NavigateAction::execute(Cursor* C) const
 		C->next();
 		break;
 	case NextToken:
-		// FIXME test code
-		S = C->getPosition();
-		E = C->nextWord();
-		C->highlight({ S, E });
+		C->nextWord();
 		break;
 	case Up:
 		C->up();
@@ -70,8 +67,18 @@ DeleteAction::DeleteAction(bool BackSpace)
 
 bool DeleteAction::commit(Document *D, Cursor *C)
 {
-	auto CPos = C->getPosition();
+	DocRange Selection = C->getSelection();
+	Selection.normalize();
 
+	if (Selection.isValid()) {
+		std::cout << D->deleteRange(Selection);
+		C->unhighlight();
+		C->moveTo(Selection.start());
+
+		return true;
+	}
+
+	auto CPos = C->getPosition();
 	if (mBackSpace) {
 		// Cannot backspace-delete at the start of the document
 		if (CPos.line().value() == 1 && CPos.column().value() == 1) {
