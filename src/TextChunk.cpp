@@ -252,6 +252,9 @@ char TextChunk::deleteChar(DocPosition Pos)
 
 std::string TextChunk::deleteRange(DocRange Rng) 
 {
+	if (!Rng.isValid()) {
+		return "";
+	}
 	mPendingBufUpdate = true;
 	size_t CharCnt = Rng.containedCharacters(this);
 
@@ -278,10 +281,9 @@ std::string TextChunk::deleteRange(DocRange Rng)
 	const char *Start = LV.start() + Rng.start().character().offset();
 	const char *End = LV.start() + LV.endOfLine().character().offset();
 
-	Deleted.write(Start, End - Start);
+	Deleted << deleteRange({ Rng.start(), LV.endOfLine() });
+	// We need a new line here
 	Deleted << '\n';
-
-	deleteRange({ Rng.start(), LV.endOfLine() });
 
 	// Deal with middle lines.
 	++L;
