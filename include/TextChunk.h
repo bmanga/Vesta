@@ -62,7 +62,7 @@ public:
 	
 	char deleteChar(DocPosition Pos);
 	std::string deleteRange(DocRange Rng);
-	std::string replaceRange(DocRange Rng);
+	std::pair<std::string, DocPosition> replaceRange(DocRange Rng, const std::string &Str);
 	DocPosition insertChar(DocPosition Pos, char C);
 
 	bool contains(Line Ln) const;

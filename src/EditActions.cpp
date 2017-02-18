@@ -46,6 +46,17 @@ TypeAction::TypeAction(std::string S)
 
 bool TypeAction::commit(Document *D, Cursor *C)
 {
+	DocRange Selection = C->getSelection();
+
+	if (Selection.isValid()) {
+		Selection.normalize();
+		auto Replaced = D->replaceRange(Selection, mContent);
+		std::cout << std::get<std::string>(Replaced);
+		C->unhighlight();
+		C->moveTo(std::get<DocPosition>(Replaced));
+
+		return true;
+	}
 	for (size_t j = 0; j < mContent.size(); ++j) {
 		DocPosition NewPos = D->insertChar(C->getPosition(), mContent[j]);
 		C->moveTo(NewPos);
@@ -68,9 +79,9 @@ DeleteAction::DeleteAction(bool BackSpace)
 bool DeleteAction::commit(Document *D, Cursor *C)
 {
 	DocRange Selection = C->getSelection();
-	Selection.normalize();
 
 	if (Selection.isValid()) {
+		Selection.normalize();
 		std::cout << D->deleteRange(Selection);
 		C->unhighlight();
 		C->moveTo(Selection.start());

@@ -109,6 +109,13 @@ DocPosition Document::insertChar(DocPosition Pos, char C)
 	return ChunkIt->insertChar(Pos, C);
 }
 
+std::pair<std::string, DocPosition> Document::replaceRange(DocRange Rng,
+	const std::string & Str)
+{
+	return containingTextChunk(Rng.start().line())->replaceRange(Rng, Str);
+}
+
+
 LineView Document::lineAt(Line Ln) const
 {
 	auto ChunkIt = containingTextChunk(Ln);

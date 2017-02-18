@@ -178,6 +178,11 @@ void TextChunk::erase(Line Line)
 
 LineView TextChunk::lineAt(Line Line) const
 {
+	/* FIXME this is a source of bugs at the moment
+	if (Line == gActiveLine) {
+		return { (const std::string &)gActiveLineBuffer, gActiveLine };
+	}
+	*/
 	auto Idx = newlineVecOffset(Line);
 
 	auto OffStart = mNewlines[Idx];
@@ -313,8 +318,15 @@ std::string TextChunk::deleteRange(DocRange Rng)
 
 }
 
-std::string TextChunk::replaceRange(DocRange Rng) {
-	return std::string();
+std::pair<std::string, DocPosition> TextChunk::replaceRange(DocRange Rng, const std::string &Str)
+{
+	std::string Deleted = deleteRange(Rng);
+
+	DocPosition NewPos = insertChar(Rng.start(), Str[0]);
+	for (size_t j = 1, Len = Str.length(); j < Len; ++j) {
+		NewPos = insertChar(NewPos, Str[j]);
+	}
+	return{ Deleted, NewPos };
 }
 
 DocPosition TextChunk::insertChar(DocPosition Pos, char C)
@@ -362,6 +374,7 @@ DocPosition TextChunk::insertChar(DocPosition Pos, char C)
 void TextChunk::insertNewline(DocPosition Pos)
 {
 	activeLineBuffer(Pos.line(), true);
+	//gActiveLine = ++Pos.line();
 
 	mNewlines.insert(mNewlines.begin() + Pos.line().value(),
 	                 mNewlines[Pos.line().offset()] + Pos.character().offset());

@@ -26,7 +26,7 @@ public:
 	bool handleRequest(FinalizedRequest Request);
 
 	DocPosition insertChar(DocPosition Pos, char C);
-
+	std::pair<std::string, DocPosition> replaceRange(DocRange Rng, const std::string &Str);
 	LineView lineAt(Line Ln) const;
 
 	void open();
