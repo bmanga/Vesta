@@ -81,14 +81,10 @@ GLDocumentRenderer::GLDocumentRenderer(Document* D)
 
 void GLDocumentRenderer::render()
 {
-	if (true/*mGlyphBufferDirty*/)
-	{
-		generateGlyphBuffer();
-	}
 	TextManager::Instance()->renderText(&mGlyphBuffer);
 }
 
-void GLDocumentRenderer::generateGlyphBuffer()
+void GLDocumentRenderer::generateGlyphBuffer(Line First, Line Last)
 {
 	//FIXME : we dont need to flush the buffer every time we want to update.
 	// We can render the active buffer separately afterwards.
@@ -105,7 +101,7 @@ void GLDocumentRenderer::generateGlyphBuffer()
 	mGlyphBuffer.push_back((const char*)Vertices, 4, Indices, 6);
 
 
-	for (LineView Line : *mDocument)
+	for (LineView Line : mDocument->range(First, Last))
 	{
 		auto Cols = AddLineToColorBuffer(Line);
 		AddLineToVertexBuffer(Line, mGlyphBuffer, Cols);

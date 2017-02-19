@@ -25,16 +25,21 @@ class ScreenPositionSelector
 public:
 	ScreenPosition getDocLocation(int x, int y) const;
 
-
+	void updateFirstLine(Line L) {
+		mFirstLine = L;
+	}
 	void updateWindowSize(WindowSize WinSize) {
 		mWinSize = WinSize;
 	}
+
+	std::pair<Line, Line> getVisibleSpan() const;
 
 	//TODO: need to get the width
 
 
 
 private:
+	Line mFirstLine{ 1 };
 	WindowSize mWinSize = { 0, 0 };
 };
 
@@ -97,10 +102,10 @@ private:
 	std::unique_ptr<LineNumberArea>  mLineNumbers = nullptr;
 	SharedDocument                   mDocument;
 	GLDocumentRenderer               mDocRenderer;
-	// The first entry in the buffer is always the cursor
-	VertexBuffer mTextBuffer;
+
 	uptr<class Cursor> mCursor;
 	ScreenPositionSelector mDocPosSelector;
+	std::pair<Line, Line> mVisibleLines = { Line{1}, Line{1} };
 
-	bool mDirtyBuffer = true;
+	bool mDirtyBuffer = false;
 };

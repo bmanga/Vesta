@@ -9,6 +9,32 @@
 
 namespace fs = std::experimental::filesystem;
 
+class Document;
+
+class LineViewRange
+{
+public:
+	using iterator = line_iterator<Document>;
+	LineViewRange(const Document &Doc, Line First, Line Last) 
+		: mDoc(Doc)
+		, mFirst(First)
+		, mLast(Last) {}
+
+
+	iterator begin() {
+		return iterator{ mDoc, mFirst };
+	}
+
+	iterator end() {
+		return iterator{ mDoc, Line{mLast.value() + 1} };
+	}
+private:
+	const Document &mDoc;
+	Line mFirst;
+	Line mLast;
+
+};
+
 
 class Document
 {
@@ -37,7 +63,15 @@ public:
 	std::string deleteRange(DocRange Rng);
 
 
-
+	LineViewRange range(Line First, Line Last) {
+		if (mChunks.size() == 0) {
+			Last = Line{ 1 };
+		}
+		else {
+			Last = std::min(Last, lastLine().line());
+		}
+		return{ *this, First, Last };
+	}
 
 	DocPosition position(ScreenPosition SPos);
 

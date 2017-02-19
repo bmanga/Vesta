@@ -50,7 +50,7 @@ void Vesta::newEditWindow(const char *Filename)
 	Window->setWindowTitle(Filename);
 	Window->show();
 
-	File->open();
+	Window->handleAction(DocumentAction(DocumentAction::OPEN));
 
 	//Window2->setWindowTitle("second window");
 	//Window2->show();

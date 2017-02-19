@@ -19,7 +19,7 @@ public:
 
 	void render();
 
-	void generateGlyphBuffer();
+	void generateGlyphBuffer(Line First, Line Last);
 private:
 	Document *mDocument;
 	ftgl::VertexBuffer mGlyphBuffer;

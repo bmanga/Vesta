@@ -42,23 +42,23 @@ ScreenPosition ScreenPositionSelector::getDocLocation(int x, int y) const
 	const VestaOptions &Opts = GetOptions();
 	float FontHeight = Opts.font().Height;
 	float FontWidth = Opts.font().Width;
-	unsigned NumLines = static_cast<unsigned>(mWinSize.y / FontHeight);
 	unsigned LineAt = unsigned(y) / FontHeight;
 
-	return {++LineAt, unsigned(x / FontWidth) + 1};
+	return {LineAt + mFirstLine.value(), unsigned(x / FontWidth) + 1};
+}
+
+std::pair<Line, Line> ScreenPositionSelector::getVisibleSpan() const 
+{
+	const VestaOptions &Opts = GetOptions();
+	float FontHeight = Opts.font().Height;
+	unsigned NumLines = static_cast<unsigned>(mWinSize.y / FontHeight);
+	return{ mFirstLine, Line{ NumLines } };
 }
 
 TextWindow::TextWindow(QWidget *Parent, SharedDocument File)
 	: QOpenGLWidget(Parent), mDocument(File)
-	, mTextBuffer("vertex:3f,tex_coord:2f,color:4f")
 	, mDocRenderer(mDocument.get())
 {
-	//Leave space for the first glyph, which is always going to be the cursor
-	GLuint Indices [6] = { 0, 1, 2, 0, 2, 3 };
-	Vertex Vertices[4]{};
-	mTextBuffer.push_back((const char*)Vertices, 4, Indices, 6);
-
-
 	mCursor = 
 		std::make_unique<Cursor>(mDocument.get());
 }
@@ -77,11 +77,7 @@ void TextWindow::initializeGL() {
 
 void TextWindow::clear()
 {
-	mTextBuffer.clear();
-
-	Vertex Vertices[4]{};
-	GLuint Indices[6] = { 0, 1, 2, 0, 2, 3 };
-	mTextBuffer.push_back((const char*)Vertices, 4, Indices, 6);
+	//TODO
 }
 void TextWindow::initialize() const
 {
@@ -114,8 +110,12 @@ void TextWindow::paintGL() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//TextManager::Instance()->renderText(&mTextBuffer);
-	//if(mDirtyBuffer)
+	if (mDirtyBuffer) {
+		mDocRenderer.generateGlyphBuffer(mVisibleLines.first, mVisibleLines.second);
+	}
 	mDocRenderer.render();
+	mDirtyBuffer = false;
+	
 	mCursor->render();
 }
 
@@ -125,6 +125,8 @@ void TextWindow::resizeGL(int width, int height) {
 	mat4_set_translation(&view, 0, height, 0);
 
 	mDocPosSelector.updateWindowSize({ width, height });
+	mVisibleLines = mDocPosSelector.getVisibleSpan();
+	mDirtyBuffer = true;
 }
 
 void TextWindow::mousePressEvent(QMouseEvent* Evt)
@@ -170,7 +172,7 @@ void TextWindow::repaint()
 
 bool TextWindow::handleRequest(Request R)
 {
-	mDirtyBuffer = !mDirtyBuffer;
+	mDirtyBuffer = true;
 
 	if (!mDocument->handleRequest(R(mCursor.get())))
 		return false;
@@ -190,6 +192,7 @@ bool TextWindow::handleAction(NavigateAction Action)
 
 bool TextWindow::handleAction(DocumentAction Action)
 {
+	mDirtyBuffer = true;
 	bool Success = Action.execute(mDocument.get());
 
 	repaint();

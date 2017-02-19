@@ -34,6 +34,11 @@ bool NavigateAction::execute(Cursor* C) const
 
 bool DocumentAction::execute(Document* D) const
 {
+	switch (mAction) {
+	case Action::OPEN:
+		D->open();
+		return true;
+	}
 	D->save();
 	return true;
 }

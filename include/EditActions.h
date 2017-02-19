@@ -39,6 +39,7 @@ public:
 	enum Action : uint8_t
 	{
 		SAVE,
+		OPEN
 	};
 
 	DocumentAction(Action A)

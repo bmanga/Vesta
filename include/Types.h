@@ -279,7 +279,6 @@ public:
 	DocPosition position(ScreenPosition SP, bool BeforeTab = true) const;
 
 	size_t length() const {
-		assert(isValid());
 		return mLength;
 	}
 
