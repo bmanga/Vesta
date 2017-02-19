@@ -44,15 +44,15 @@ ScreenPosition ScreenPositionSelector::getDocLocation(int x, int y) const
 	float FontWidth = Opts.font().Width;
 	unsigned LineAt = unsigned(y) / FontHeight;
 
-	return {LineAt + mFirstLine.value(), unsigned(x / FontWidth) + 1};
+	return {LineAt + 1, unsigned(x / FontWidth) + 1};
 }
 
-std::pair<Line, Line> ScreenPositionSelector::getVisibleSpan() const 
+Line ScreenPositionSelector::getLastVisibleLine() const
 {
 	const VestaOptions &Opts = GetOptions();
 	float FontHeight = Opts.font().Height;
 	unsigned NumLines = static_cast<unsigned>(mWinSize.y / FontHeight);
-	return{ mFirstLine, Line{ NumLines } };
+	return Line{ NumLines };
 }
 
 TextWindow::TextWindow(QWidget *Parent, SharedDocument File)
@@ -125,13 +125,15 @@ void TextWindow::resizeGL(int width, int height) {
 	mat4_set_translation(&view, 0, height, 0);
 
 	mDocPosSelector.updateWindowSize({ width, height });
-	mVisibleLines = mDocPosSelector.getVisibleSpan();
-	mDirtyBuffer = true;
+	mVisibleLines.second = mVisibleLines.first + 
+		mDocPosSelector.getLastVisibleLine().offset();
+	//mDirtyBuffer = true;
 }
 
 void TextWindow::mousePressEvent(QMouseEvent* Evt)
 {
 	auto SPos = mDocPosSelector.getDocLocation(Evt->pos().x(), Evt->pos().y());
+	SPos.adjustByLineOffset(mVisibleLines.first);
 	
 	Pen P{ {5, 0, 0}, {0, 0, 1, 1} };
 
@@ -148,6 +150,7 @@ void TextWindow::mouseMoveEvent(QMouseEvent * Evt)
 	}
 
 	auto SPos = mDocPosSelector.getDocLocation(Evt->pos().x(), Evt->pos().y());
+	SPos.adjustByLineOffset(mVisibleLines.first);
 	auto EndPos = mDocument->position(SPos);
 	auto StartPos = mCursor->getSelection().start();
 
@@ -155,6 +158,28 @@ void TextWindow::mouseMoveEvent(QMouseEvent * Evt)
 	mCursor->moveTo(EndPos);
 	this->repaint();
 
+}
+
+//FIXME replace once std::clamp is available
+namespace std {
+	template <class T>
+	const T& clamp(const T& Val, const T&Lo, const T&Hi) 		{
+		return std::max(std::min(Val, Hi), Lo);
+	}
+}
+
+void TextWindow::wheelEvent(QWheelEvent * Evt) {
+	int NumSteps = -Evt->delta() / 80;
+
+	unsigned First = mVisibleLines.first.value() + NumSteps;
+	First = std::clamp(First, 1u, mDocument->lastLine().line().value());
+
+	mVisibleLines.first = Line{ First };
+	mVisibleLines.second += First;
+
+	mDirtyBuffer = true;
+
+	repaint();
 }
 
 
@@ -166,7 +191,7 @@ void TextWindow::repaint()
 	//	mDirtyBuffer = false;
 	//}
 
-	mCursor->updateBuffer();
+	mCursor->updateBuffer(mVisibleLines.first);
 	QOpenGLWidget::repaint();
 }
 

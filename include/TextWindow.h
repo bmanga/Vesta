@@ -1,5 +1,6 @@
 #pragma once
 #include <QObject>
+#include <QWheelEvent>
 #include "Freetype-core/opengl.h"
 #include <QOpenGLWidget>
 #include <memory>
@@ -25,21 +26,15 @@ class ScreenPositionSelector
 public:
 	ScreenPosition getDocLocation(int x, int y) const;
 
-	void updateFirstLine(Line L) {
-		mFirstLine = L;
-	}
 	void updateWindowSize(WindowSize WinSize) {
 		mWinSize = WinSize;
 	}
 
-	std::pair<Line, Line> getVisibleSpan() const;
+	Line getLastVisibleLine() const;
 
 	//TODO: need to get the width
 
-
-
 private:
-	Line mFirstLine{ 1 };
 	WindowSize mWinSize = { 0, 0 };
 };
 
@@ -94,6 +89,7 @@ private:
 	void resizeGL(int w, int h) override;
 	void mousePressEvent(QMouseEvent *Evt) override;
 	void mouseMoveEvent(QMouseEvent *Evt) override;
+	void wheelEvent(QWheelEvent *Evt) override;
 	//void keyPressEvent(QKeyEvent *Evt) override;
 	void repaint();
 

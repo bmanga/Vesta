@@ -41,7 +41,7 @@ public:
 
 	Document *getUnderlyingDocument() const { return nullptr; }
 
-	void updateBuffer();
+	void updateBuffer(Line VirtOffset);
 
 	static void render();
 

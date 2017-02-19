@@ -72,6 +72,17 @@ public:
 		return *this;
 	}
 
+	ThisType operator+(int Rhs) const {
+		ThisType Res(*this);
+		Res.mValue += Rhs;
+		return Res;
+	}
+
+	ThisType &operator +=(int Rhs) {
+		mValue += Rhs;
+		return *this;
+	}
+
 	ThisType operator++(int) {
 		return ThisType { mValue++ };
 	}
@@ -103,6 +114,10 @@ public:
 
 	auto line() const { return mLine; }
 	auto column() const { return mColumn; }
+
+	void adjustByLineOffset(Line Off) 		{
+		mLine = Line{ mLine.value() + Off.offset() };
+	}
 
 protected:
 	Line mLine;

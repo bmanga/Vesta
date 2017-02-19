@@ -3,14 +3,14 @@
 #include "Document.h"
 
 
-static void AddLineToVertexBuffer(LineView Line, VertexBuffer &Buffer, 
+static void AddLineToVertexBuffer(Line ScreenLine, LineView Line, VertexBuffer &Buffer, 
 	std::vector<TinyColor> Cols) {
 	const VestaOptions &Opts = GetOptions();
 
 	Position Pos{ 0, 0, 0 };
 
 	//FIXME: hate the negative sign
-	Pos.y -= Line.line().value() * Opts.font().Height;
+	Pos.y -= ScreenLine.value() * Opts.font().Height;
 
 	Font *F = Opts.font().Font;
 
@@ -101,10 +101,12 @@ void GLDocumentRenderer::generateGlyphBuffer(Line First, Line Last)
 	mGlyphBuffer.push_back((const char*)Vertices, 4, Indices, 6);
 
 	std::vector<TinyColor> Cols;
+	Line ScreenLine{ 1 };
 	for (LineView Line : mDocument->range(First, Last))
 	{
 		Cols = AddLineToColorBuffer(Line);
-		AddLineToVertexBuffer(Line, mGlyphBuffer, Cols);
+		AddLineToVertexBuffer(ScreenLine, Line, mGlyphBuffer, Cols);
+		++ScreenLine;
 	}
 
 	mGlyphBufferDirty = false;

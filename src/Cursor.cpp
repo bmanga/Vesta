@@ -183,7 +183,7 @@ void Cursor::eol()
 	mPos = Line.endOfLine();
 }
 
-void Cursor::updateBuffer()
+void Cursor::updateBuffer(Line VirtOffset)
 {
 	constexpr static GLuint Indices[] = { 0, 1, 2, 0, 2, 3 };
 	gCursorBuffer.clear();
@@ -197,7 +197,7 @@ void Cursor::updateBuffer()
 
 	//Create a pen at the right position
 	float X = FontWidth * (mPos.column().offset());
-	float Y = FontHeight * (mPos.line().value());
+	float Y = FontHeight * (mPos.line().value() - VirtOffset.offset());
 	Pen P{ {X, -Y, 0.5f}, {1, 1, 1, 1} };
 
 	Vertex Vertices[4];
@@ -223,9 +223,9 @@ void Cursor::updateBuffer()
 		DocPosition End = mSelection.end();
 
 		float SelX0 = FontWidth * (Start.column().offset());
-		float SelY0 = FontHeight * (Start.line().value());
+		float SelY0 = FontHeight * (Start.line().value() - VirtOffset.offset());
 		float SelX1 = FontWidth * (End.column().offset());
-		float SelY1 = FontHeight * (End.line().value());
+		float SelY1 = FontHeight * (End.line().value() - VirtOffset.offset());
 		Pen SelStart{ { SelX0, -SelY0, 0.5f },{ 0, 0.3, 1, 0.6 } };
 		Pen SelEnd{ { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2 } };
 		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
@@ -239,9 +239,9 @@ void Cursor::updateBuffer()
 		DocPosition End = mDocument->lineAt(L).endOfLine();
 
 		float SelX0 = FontWidth * (Start.column().offset());
-		float SelY0 = FontHeight * (Start.line().value());
+		float SelY0 = FontHeight * (Start.line().value() - VirtOffset.offset());
 		float SelX1 = FontWidth * (End.column().offset());
-		float SelY1 = FontHeight * (End.line().value());
+		float SelY1 = FontHeight * (End.line().value() - VirtOffset.offset());
 		Pen SelStart{ { SelX0, -SelY0, 0.5f },{ 0, 0.3, 1, 0.6 } };
 		Pen SelEnd{ { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2 } };
 		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
@@ -252,9 +252,9 @@ void Cursor::updateBuffer()
 		while (++L != mSelection.end().line()) {
 			End = mDocument->lineAt(L).endOfLine();
 			SelX0 = 0;
-			SelY0 = FontHeight * L.value();
+			SelY0 = FontHeight *(L.value() - VirtOffset.offset());
 			SelX1 = FontWidth * (End.column().offset());
-			SelY1 = FontHeight * (End.line().value());
+			SelY1 = FontHeight * (End.line().value() - VirtOffset.offset());
 			SelStart = { { SelX0, -SelY0, 0.5f },{ 0, 0.3f, 1, 0.6f } };
 			SelEnd = { { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2f } };
 			SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
@@ -264,9 +264,9 @@ void Cursor::updateBuffer()
 		// Deal with the last line.
 		End = mSelection.end();
 		SelX0 = 0;
-		SelY0 = FontHeight * L.value();
+		SelY0 = FontHeight * (L.value() - VirtOffset.offset());
 		SelX1 = FontWidth * (End.column().offset());
-		SelY1 = FontHeight * (End.line().value());
+		SelY1 = FontHeight * (End.line().value() - VirtOffset.offset());
 		SelStart = { { SelX0, -SelY0, 0.5f },{ 0, 0.3f, 1, 0.6f } };
 		SelEnd = { { SelX1, -SelY1, 0.5f },{ 1, 1, 1, 0.2f } };
 		SetHighlightVertices(Glyph, SelStart, SelEnd, SelVertices);
