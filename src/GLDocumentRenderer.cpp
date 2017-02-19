@@ -100,10 +100,10 @@ void GLDocumentRenderer::generateGlyphBuffer(Line First, Line Last)
 	constexpr static unsigned Indices[] = {0, 1, 2, 0, 2, 3};
 	mGlyphBuffer.push_back((const char*)Vertices, 4, Indices, 6);
 
-
+	std::vector<TinyColor> Cols;
 	for (LineView Line : mDocument->range(First, Last))
 	{
-		auto Cols = AddLineToColorBuffer(Line);
+		Cols = AddLineToColorBuffer(Line);
 		AddLineToVertexBuffer(Line, mGlyphBuffer, Cols);
 	}
 
